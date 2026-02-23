@@ -156,7 +156,7 @@ All compression methods return an array:
         'savings_bytes' => 1966080,
         'savings_percent' => 80,
         'format' => 'webp',
-        'download_url' => 'https://api.octosqueeze.com/v1/download/...',
+        'download_url' => 'https://app.octosqueeze.com/api/v1/download/...',
         'expires_at' => '2024-01-15T12:00:00Z',
     ],
 ]
