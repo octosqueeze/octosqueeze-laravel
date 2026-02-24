@@ -22,7 +22,7 @@ return [
     |
     */
 
-    'endpoint' => env('OCTOSQUEEZE_ENDPOINT', 'https://app.octosqueeze.com/api/v1'),
+    'endpoint' => env('OCTOSQUEEZE_ENDPOINT', 'https://api.octosqueeze.com/api/v1'),
 
     /*
     |--------------------------------------------------------------------------
