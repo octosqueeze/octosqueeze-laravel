@@ -93,6 +93,22 @@ $result = OctoSqueeze::compressUrls([
 ]);
 ```
 
+### Compress Storage Files
+
+For apps that store files on cloud storage (S3, R2, etc.), use the built-in `CompressStorageFileJob`:
+
+```php
+use OctoSqueeze\Laravel\Jobs\CompressStorageFileJob;
+
+// Compress a file on a storage disk
+CompressStorageFileJob::dispatch('r2', 'avatars/user-123.webp', 'public');
+
+// Parameters: $disk, $path, $visibility (optional)
+CompressStorageFileJob::dispatch('s3', 'uploads/photo.jpg');
+```
+
+The job downloads the file from cloud storage, sends it to OctoSqueeze for compression, and replaces the original if the compressed version is smaller. It handles cleanup of temporary files automatically.
+
 ### Download and Save
 
 ```php
