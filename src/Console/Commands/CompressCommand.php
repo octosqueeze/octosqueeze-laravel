@@ -5,9 +5,12 @@ namespace OctoSqueeze\Laravel\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 use OctoSqueeze\Laravel\Facades\OctoSqueeze;
+use OctoSqueeze\Laravel\Console\Commands\Concerns\FormatsBytes;
 
 class CompressCommand extends Command
 {
+    use FormatsBytes;
+
     protected $signature = 'octosqueeze:compress
                             {path : File path or URL to compress}
                             {--disk= : Storage disk to use}
@@ -55,48 +58,80 @@ class CompressCommand extends Command
             return self::FAILURE;
         }
 
-        $data = $result['data'] ?? [];
-
         $this->info("Compression successful!");
 
-        if (isset($data['original_size'])) {
-            $this->line("Original size: " . $this->formatBytes($data['original_size']));
-        }
+        // URL compression returns 'items' array, file compression returns 'data' object
+        if (isset($result['items'])) {
+            // URL/batch response shape
+            $items = $result['items'];
+            $this->line("Compressed " . count($items) . " item(s)");
 
-        if (isset($data['compressed_size'])) {
-            $this->line("Compressed size: " . $this->formatBytes($data['compressed_size']));
-        }
+            foreach ($items as $i => $item) {
+                if (count($items) > 1) {
+                    $this->newLine();
+                    $this->line("--- Item " . ($i + 1) . " ---");
+                }
 
-        if (isset($data['savings_percent'])) {
-            $this->line("Savings: {$data['savings_percent']}%");
-        }
+                if (isset($item['original_size'])) {
+                    $this->line("Original size: " . $this->formatBytes($item['original_size']));
+                }
 
-        if ($output && isset($data['download_url'])) {
-            $this->info("Downloading to: {$output}");
+                if (isset($item['compressed_size'])) {
+                    $this->line("Compressed size: " . $this->formatBytes($item['compressed_size']));
+                }
 
-            $saved = OctoSqueeze::downloadAndSave($data['download_url'], $output, $disk);
+                if (isset($item['savings_percent'])) {
+                    $this->line("Savings: {$item['savings_percent']}%");
+                }
 
-            if ($saved) {
-                $this->info("File saved successfully!");
-            } else {
-                $this->error("Failed to save file");
-                return self::FAILURE;
+                if ($output && isset($item['download_url'])) {
+                    $this->info("Downloading to: {$output}");
+
+                    $saved = OctoSqueeze::downloadAndSave($item['download_url'], $output, $disk);
+
+                    if ($saved) {
+                        $this->info("File saved successfully!");
+                    } else {
+                        $this->error("Failed to save file");
+                        return self::FAILURE;
+                    }
+                } elseif (isset($item['download_url'])) {
+                    $this->line("Download URL: {$item['download_url']}");
+                }
             }
-        } elseif (isset($data['download_url'])) {
-            $this->line("Download URL: {$data['download_url']}");
+        } else {
+            // File compression response shape
+            $data = $result['data'] ?? [];
+
+            if (isset($data['original_size'])) {
+                $this->line("Original size: " . $this->formatBytes($data['original_size']));
+            }
+
+            if (isset($data['compressed_size'])) {
+                $this->line("Compressed size: " . $this->formatBytes($data['compressed_size']));
+            }
+
+            if (isset($data['savings_percent'])) {
+                $this->line("Savings: {$data['savings_percent']}%");
+            }
+
+            if ($output && isset($data['download_url'])) {
+                $this->info("Downloading to: {$output}");
+
+                $saved = OctoSqueeze::downloadAndSave($data['download_url'], $output, $disk);
+
+                if ($saved) {
+                    $this->info("File saved successfully!");
+                } else {
+                    $this->error("Failed to save file");
+                    return self::FAILURE;
+                }
+            } elseif (isset($data['download_url'])) {
+                $this->line("Download URL: {$data['download_url']}");
+            }
         }
 
         return self::SUCCESS;
     }
 
-    protected function formatBytes(int $bytes): string
-    {
-        $units = ['B', 'KB', 'MB', 'GB'];
-        $bytes = max($bytes, 0);
-        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
-        $pow = min($pow, count($units) - 1);
-        $bytes /= pow(1024, $pow);
-
-        return round($bytes, 2) . ' ' . $units[$pow];
-    }
 }

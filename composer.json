@@ -18,9 +18,18 @@
         "illuminate/queue": "^10.0|^11.0|^12.0",
         "octosqueeze/php-client": "^1.0|dev-main"
     },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5|^11.0",
+        "orchestra/testbench": "^8.0|^9.0|^10.0"
+    },
     "autoload": {
         "psr-4": {
             "OctoSqueeze\\Laravel\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "OctoSqueeze\\Laravel\\Tests\\": "tests/"
         }
     },
     "extra": {
@@ -33,6 +42,15 @@
             }
         }
     },
-    "minimum-stability": "stable",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../octosqueeze-php-client",
+            "options": {
+                "symlink": true
+            }
+        }
+    ],
+    "minimum-stability": "dev",
     "prefer-stable": true
 }

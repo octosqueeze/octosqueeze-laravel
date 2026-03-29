@@ -4,9 +4,12 @@ namespace OctoSqueeze\Laravel\Console\Commands;
 
 use Illuminate\Console\Command;
 use OctoSqueeze\Laravel\Facades\OctoSqueeze;
+use OctoSqueeze\Laravel\Console\Commands\Concerns\FormatsBytes;
 
 class UsageCommand extends Command
 {
+    use FormatsBytes;
+
     protected $signature = 'octosqueeze:usage';
 
     protected $description = 'Display OctoSqueeze API usage statistics';
@@ -55,14 +58,4 @@ class UsageCommand extends Command
         return self::SUCCESS;
     }
 
-    protected function formatBytes(int $bytes): string
-    {
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        $bytes = max($bytes, 0);
-        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
-        $pow = min($pow, count($units) - 1);
-        $bytes /= pow(1024, $pow);
-
-        return round($bytes, 2) . ' ' . $units[$pow];
-    }
 }

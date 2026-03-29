@@ -100,7 +100,13 @@ class OctoSqueezeManager
     {
         $queueConnection = $this->app['config']['octosqueeze.queue'];
 
-        $path = $file instanceof UploadedFile ? $file->getRealPath() : $file;
+        if ($file instanceof UploadedFile) {
+            // Copy to persistent storage — temp files are deleted after the request
+            $storedPath = $file->store('octosqueeze-queue', 'local');
+            $path = Storage::disk('local')->path($storedPath);
+        } else {
+            $path = $file;
+        }
 
         CompressImageJob::dispatch($path, $options)
             ->onQueue($queueConnection);
@@ -127,7 +133,7 @@ class OctoSqueezeManager
      */
     public function download(string $url): ?string
     {
-        return $this->client()->download($url);
+        return $this->client()->downloadRaw($url);
     }
 
     /**
