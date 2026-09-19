@@ -83,18 +83,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Hash Check
-    |--------------------------------------------------------------------------
-    |
-    | Skip compression for files that have already been compressed (same hash).
-    | Saves API credits when re-uploading identical files.
-    |
-    */
-
-    'hash_check' => env('OCTOSQUEEZE_HASH_CHECK', true),
-
-    /*
-    |--------------------------------------------------------------------------
     | SSL Verification
     |--------------------------------------------------------------------------
     |

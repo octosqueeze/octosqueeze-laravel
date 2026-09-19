@@ -28,7 +28,6 @@ class OctoSqueezeManager
                 ->setOptions([
                     'mode' => $config['mode'],
                     'formats' => $config['formats'],
-                    'hash_check' => $config['hash_check'],
                 ]);
 
             if (!$config['verify_ssl']) {

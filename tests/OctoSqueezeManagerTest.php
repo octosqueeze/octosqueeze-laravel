@@ -163,7 +163,6 @@ class OctoSqueezeManagerTest extends TestCase
         'endpoint' => 'https://api.octosqueeze.com/api/v1',
         'mode' => 'balanced',
         'formats' => ['webp', 'avif'],
-        'hash_check' => true,
         'verify_ssl' => true,
         'disk' => 'public',
         'queue' => 'default',
@@ -232,11 +231,21 @@ class OctoSqueezeManagerTest extends TestCase
         $manager = new OctoSqueezeManager($this->app([
             'mode' => 'quality',
             'formats' => ['webp'],
-            'hash_check' => false,
         ]));
         $client = $manager->client();
 
         $this->assertInstanceOf(OctoSqueezeClient::class, $client);
+    }
+
+    public function test_client_sends_no_hash_check_option(): void
+    {
+        // The API never deduplicated on hash_check, so the client no longer claims to
+        // (founder decision 2026-09-20). A consumer config that still has the key is ignored.
+        $manager = new OctoSqueezeManager($this->app(['hash_check' => true]));
+        $options = (new \ReflectionProperty(OctoSqueezeClient::class, 'options'))->getValue($manager->client());
+
+        $this->assertArrayNotHasKey('hash_check', $options);
+        $this->assertSame('balanced', $options['mode']);
     }
 
     // ---- compress() routing tests ----
