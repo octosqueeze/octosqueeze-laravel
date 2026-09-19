@@ -137,13 +137,31 @@ class OctoSqueezeManager
     }
 
     /**
+     * Whether downloaded content can be a compressed file rather than a page or an
+     * error body. Deliberately a deny-list: libmagic does not know every image
+     * format OctoSqueeze outputs (AVIF, JXL), but it always recognises HTML/JSON.
+     * An SVG that libmagic reads as text is refused too: its original is kept.
+     */
+    public static function looksLikeFile(string $content): bool
+    {
+        if ($content === '') {
+            return false;
+        }
+
+        $mime = (string) (new \finfo(FILEINFO_MIME_TYPE))->buffer($content);
+
+        return ! str_starts_with($mime, 'text/')
+            && ! in_array($mime, ['application/json', 'application/xml', 'application/xhtml+xml'], true);
+    }
+
+    /**
      * Download and save compressed image to storage
      */
     public function downloadAndSave(string $url, string $path, ?string $disk = null): bool
     {
         $content = $this->download($url);
 
-        if ($content === null) {
+        if ($content === null || ! self::looksLikeFile($content)) {
             return false;
         }
 

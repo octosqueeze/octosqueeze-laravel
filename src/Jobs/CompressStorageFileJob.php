@@ -74,6 +74,20 @@ class CompressStorageFileJob implements ShouldQueue
                 return;
             }
 
+            // Whatever came back is about to replace the stored file, so it must not
+            // be a page: an HTML login page or a JSON error served as a 200 once
+            // overwrote customer images.
+            if (! OctoSqueezeManager::looksLikeFile($compressedContent)) {
+                Log::error('[OctoSqueeze] Refusing to overwrite: response was not an image', [
+                    'path' => $this->path,
+                    'disk' => $this->disk,
+                    'detected_mime' => (new \finfo(FILEINFO_MIME_TYPE))->buffer($compressedContent) ?: 'unknown',
+                    'bytes' => strlen($compressedContent),
+                ]);
+
+                return;
+            }
+
             $newSize = strlen($compressedContent);
 
             if ($newSize < $originalSize) {
