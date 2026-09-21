@@ -60,11 +60,27 @@ class CompressImageJobTest extends TestCase
         return $path;
     }
 
+    /**
+     * The queue job the worker would hand the job (withFakeQueueInteractions()
+     * only exists from Laravel 11; this package supports 10).
+     */
+    private function onQueue(CompressImageJob $job, bool $expectFail): CompressImageJob
+    {
+        $queueJob = \Mockery::mock(\Illuminate\Contracts\Queue\Job::class);
+        $queueJob->shouldReceive('attempts')->andReturn(1);
+        $expectFail
+            ? $queueJob->shouldReceive('fail')->once()
+            : $queueJob->shouldNotReceive('fail');
+        $job->setJob($queueJob);
+
+        return $job;
+    }
+
     public function test_a_failure_that_is_safe_to_resend_is_retried_and_keeps_the_file(): void
     {
         $this->fakeManager(['state' => false, 'error' => 'Service unavailable', 'retryable' => true]);
         $path = $this->queuedCopy();
-        $job = (new CompressImageJob($path))->withFakeQueueInteractions();
+        $job = $this->onQueue(new CompressImageJob($path), expectFail: false);
 
         try {
             $job->handle();
@@ -81,11 +97,9 @@ class CompressImageJobTest extends TestCase
     {
         $this->fakeManager(['state' => false, 'error' => 'Request to OctoSqueeze API failed: 0', 'retryable' => false]);
         $path = $this->queuedCopy();
-        $job = (new CompressImageJob($path))->withFakeQueueInteractions();
+        $job = $this->onQueue(new CompressImageJob($path), expectFail: true);
 
-        $job->handle(); // does not throw: no retry
-
-        $job->assertFailed();
+        $job->handle(); // does not throw, and fails the job: no retry
 
         // the queue calls failed() for a failed job; that removes the copy
         $job->failed(new \Exception('x'));
@@ -96,11 +110,9 @@ class CompressImageJobTest extends TestCase
     {
         $this->fakeManager(['state' => false, 'error' => 'HTTP 504 error from API']);
         $path = $this->queuedCopy();
-        $job = (new CompressImageJob($path))->withFakeQueueInteractions();
+        $job = $this->onQueue(new CompressImageJob($path), expectFail: true);
 
         $job->handle();
-
-        $job->assertFailed();
         @unlink($path);
     }
 
@@ -108,11 +120,9 @@ class CompressImageJobTest extends TestCase
     {
         $this->fakeManager(['state' => true, 'data' => ['download_url' => 'https://api.test/api/v1/download/job-1/signed', 'savings_percent' => 70]]);
         $path = $this->queuedCopy();
-        $job = (new CompressImageJob($path, [], 's3', 'images/out.jpg'))->withFakeQueueInteractions();
+        $job = $this->onQueue(new CompressImageJob($path, [], 's3', 'images/out.jpg'), expectFail: false);
 
         $job->handle();
-
-        $job->assertNotFailed();
         $this->assertSame([['https://api.test/api/v1/download/job-1/signed', 'images/out.jpg', 's3']], $this->saved);
         $this->assertFileDoesNotExist($path);
     }
