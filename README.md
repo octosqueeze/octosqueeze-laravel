@@ -72,12 +72,18 @@ $result = OctoSqueeze::compress($file, [
 // Queue for background processing
 OctoSqueeze::queue($request->file('image'));
 
-// With options
+// With options, keeping the result: pass where to save it (and the disk)
 OctoSqueeze::queue($file, [
     'mode' => 'quality',
     'formats' => ['webp'],
-]);
+], 'images/photo.webp', 's3');
 ```
+
+Without a save path the image is compressed (and counts against your plan) but
+the compressed file is not stored. The job retries only failures that are safe to
+send again (see php-client's "Retries and billing"); a timeout or a monthly/daily
+limit fails the job at once. For files already on a disk, `CompressStorageFileJob`
+replaces the stored file in place.
 
 ### Batch Compression
 
@@ -200,8 +206,8 @@ class Photo extends Model
     protected static function booted()
     {
         static::created(function ($photo) {
-            // Queue compression after upload
-            OctoSqueeze::queue($photo->path);
+            // Queue compression after upload, saving the result over the original
+            OctoSqueeze::queue(Storage::disk('public')->path($photo->path), [], $photo->path, 'public');
         });
     }
 }

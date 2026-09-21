@@ -93,9 +93,11 @@ class OctoSqueezeManager
     }
 
     /**
-     * Queue a file for compression
+     * Queue a file for compression. Pass $savePath (and optionally $disk) to keep
+     * the result: without one the image is compressed, and billed, but the
+     * compressed file is not stored anywhere.
      */
-    public function queue(UploadedFile|string $file, array $options = []): void
+    public function queue(UploadedFile|string $file, array $options = [], ?string $savePath = null, ?string $disk = null): void
     {
         $queueConnection = $this->app['config']['octosqueeze.queue'];
 
@@ -107,7 +109,7 @@ class OctoSqueezeManager
             $path = $file;
         }
 
-        CompressImageJob::dispatch($path, $options)
+        CompressImageJob::dispatch($path, $options, $disk, $savePath)
             ->onQueue($queueConnection);
     }
 
