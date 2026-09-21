@@ -1,0 +1,48 @@
+name: CI
+
+# Every Laravel app that compresses through OctoSqueeze installs this package
+# with octosqueeze/php-client, so it is tested against php-client's main
+# branch — the pair a consumer gets. The consumer contract itself is
+# octosqueeze-app's tests/Feature/Contract, which that repo's CI also runs
+# every night against both packages' main branches.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        # 8.1 resolves Laravel 10 (testbench 8), 8.2+ Laravel 11/12
+        php: ['8.1', '8.2', '8.3', '8.4']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # composer.json resolves php-client from the sibling ../octosqueeze-php-client
+      # (the local checkout layout); put php-client's main branch there
+      - name: Check out php-client next to this package
+        run: git clone --depth 1 https://github.com/octosqueeze/php-client.git ../octosqueeze-php-client
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Install dependencies
+        run: composer update --prefer-dist --no-interaction --no-progress
+
+      - name: Run tests
+        run: vendor/bin/phpunit
